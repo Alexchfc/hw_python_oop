@@ -6,29 +6,24 @@ class Calculator:
         self.limit = limit
         self.records = []
 
-    def add_record(self, Record):
-        self.Record = Record
-        self.records.append(self.Record)
+    def add_record(self, record):
+        self.records.append(record)
 
     def get_today_stats(self):
+        amounts_day = [record.amount for record in self.records
+                       if record.date == dt.date.today()]
 
-        amount_sum_today = 0
-
-        for i in self.records:
-            if i.date == dt.datetime.now().date():
-                amount_sum_today += i.amount
-        return amount_sum_today
+        return sum(amounts_day)
 
     def get_week_stats(self):
-
-        amount_sum_week = 0
         week_range = dt.date.today() - dt.timedelta(days=7)
+        amounts_week = [record.amount for record in self.records
+                        if record.date >= week_range]
 
-        for i in self.records:
-            if i.date >= week_range:
-                amount_sum_week += i.amount
-        print(amount_sum_week)
-        return amount_sum_week
+        return sum(amounts_week)
+
+    def remain(self):
+        return self.limit - self.get_today_stats()
 
 
 class Record:
@@ -36,59 +31,37 @@ class Record:
         self.amount = amount
         self.comment = comment
         if date is None:
-            self.date = dt.datetime.now().date()
+            self.date = dt.date.today()
         else:
             self.date = dt.datetime.strptime(date, '%d.%m.%Y').date()
 
 
 class CaloriesCalculator(Calculator):
-
     def get_calories_remained(self):
-
-        remain = self.limit - self.get_today_stats()
-        if self.get_today_stats() >= self.limit:
+        if self.remain() <= 0:
             return 'Хватит есть!'
-        elif self.get_today_stats() < self.limit:
-            return ('Сегодня можно съесть что-нибудь '
-                    'ещё, но с общей калорийностью '
-                    f'не более {remain} кКал')
+
+        return ('Сегодня можно съесть что-нибудь '
+                'ещё, но с общей калорийностью '
+                f'не более {self.remain()} кКал')
 
 
 class CashCalculator(Calculator):
     EURO_RATE = 70.0
     USD_RATE = 60.0
+    RUB_RATE = 1.0
+
+    rate_dict = {'rub': RUB_RATE, 'eur': EURO_RATE, 'usd': USD_RATE}
+    cash_dict = {'rub': 'руб', 'eur': 'Euro', 'usd': 'USD'}
 
     def get_today_cash_remained(self, currency):
+        remain = self.remain() / self.rate_dict[currency]
+        remain = round(remain, 2)
+        cash_name = self.cash_dict[currency]
 
-        remain = self.limit - self.get_today_stats()
-        if currency == 'rub':
-            remain_rub = round(remain, 2)
-            if remain_rub > 0:
-                return f'На сегодня осталось {remain_rub} руб'
-            elif remain_rub < 0:
-                remain_rub = remain_rub * -1
-                return f'Денег нет, держись: твой долг - {remain_rub} руб'
-            else:
-                return 'Денег нет, держись'
-
-        if currency == 'usd':
-            remain_usd = remain / CashCalculator.USD_RATE
-            remain_usd = round(remain_usd, 2)
-            if remain_usd > 0:
-                return f'На сегодня осталось {remain_usd} USD'
-            elif remain_usd < 0:
-                remain_usd = remain_usd * -1
-                return f'Денег нет, держись: твой долг - {remain_usd} USD'
-            else:
-                return 'Денег нет, держись'
-
-        if currency == 'eur':
-            remain_eur = remain / CashCalculator.EURO_RATE
-            remain_eur = round(remain_eur, 2)
-            if remain_eur > 0:
-                return f'На сегодня осталось {remain_eur} Euro'
-            elif remain_eur < 0:
-                remain_eur = remain_eur * -1
-                return f'Денег нет, держись: твой долг - {remain_eur} Euro'
-            else:
-                return 'Денег нет, держись'
+        if remain > 0:
+            return f'На сегодня осталось {remain} {cash_name}'
+        elif remain < 0:
+            remain = abs(remain)
+            return f'Денег нет, держись: твой долг - {remain} {cash_name}'
+        return 'Денег нет, держись'
