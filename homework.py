@@ -10,16 +10,15 @@ class Calculator:
         self.records.append(record)
 
     def get_today_stats(self):
-        amounts_day = [record.amount for record in self.records
-                       if record.date == dt.date.today()]
-
+        today = dt.date.today()
+        amounts_day = (record.amount for record in self.records
+                       if record.date == today)
         return sum(amounts_day)
 
     def get_week_stats(self):
         week_range = dt.date.today() - dt.timedelta(days=7)
-        amounts_week = [record.amount for record in self.records
-                        if record.date >= week_range]
-
+        amounts_week = (record.amount for record in self.records
+                        if record.date >= week_range)
         return sum(amounts_week)
 
     def remain(self):
@@ -38,12 +37,13 @@ class Record:
 
 class CaloriesCalculator(Calculator):
     def get_calories_remained(self):
-        if self.remain() <= 0:
+        cal_count = self.remain()
+        if cal_count <= 0:
             return 'Хватит есть!'
 
         return ('Сегодня можно съесть что-нибудь '
                 'ещё, но с общей калорийностью '
-                f'не более {self.remain()} кКал')
+                f'не более {cal_count} кКал')
 
 
 class CashCalculator(Calculator):
@@ -51,17 +51,23 @@ class CashCalculator(Calculator):
     USD_RATE = 60.0
     RUB_RATE = 1.0
 
-    rate_dict = {'rub': RUB_RATE, 'eur': EURO_RATE, 'usd': USD_RATE}
-    cash_dict = {'rub': 'руб', 'eur': 'Euro', 'usd': 'USD'}
+    cash_dict = {'rub': [RUB_RATE, 'руб'],
+                 'eur': [EURO_RATE, 'Euro'],
+                 'usd': [USD_RATE, 'USD']}
 
     def get_today_cash_remained(self, currency):
-        remain = self.remain() / self.rate_dict[currency]
-        remain = round(remain, 2)
-        cash_name = self.cash_dict[currency]
+        # проверка валюты тут, так подсказал наставник.
+        if currency not in self.cash_dict:
+            raise ValueError('Неверное значение валюты. '
+                             'Наберите rub, eur или usd')
 
-        if remain > 0:
-            return f'На сегодня осталось {remain} {cash_name}'
+        cash_rate, cash_name = self.cash_dict[currency]
+        remain = self.remain() / cash_rate
+        remain = round(remain, 2)
+
+        if remain == 0:
+            return 'Денег нет, держись'
         elif remain < 0:
             remain = abs(remain)
             return f'Денег нет, держись: твой долг - {remain} {cash_name}'
-        return 'Денег нет, держись'
+        return f'На сегодня осталось {remain} {cash_name}'
