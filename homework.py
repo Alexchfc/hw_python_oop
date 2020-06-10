@@ -51,12 +51,13 @@ class CashCalculator(Calculator):
     USD_RATE = 60.0
     RUB_RATE = 1.0
 
-    cash_dict = {'rub': [RUB_RATE, 'руб'],
-                 'eur': [EURO_RATE, 'Euro'],
-                 'usd': [USD_RATE, 'USD']}
+    cash_dict = {'rub': (RUB_RATE, 'руб'),
+                 'eur': (EURO_RATE, 'Euro'),
+                 'usd': (USD_RATE, 'USD')}
 
     def get_today_cash_remained(self, currency):
-        # проверка валюты тут, так подсказал наставник.
+        if self.remain() == 0:
+            return 'Денег нет, держись'
         if currency not in self.cash_dict:
             raise ValueError('Неверное значение валюты. '
                              'Наберите rub, eur или usd')
@@ -65,9 +66,7 @@ class CashCalculator(Calculator):
         remain = self.remain() / cash_rate
         remain = round(remain, 2)
 
-        if remain == 0:
-            return 'Денег нет, держись'
-        elif remain < 0:
+        if remain < 0:
             remain = abs(remain)
             return f'Денег нет, держись: твой долг - {remain} {cash_name}'
         return f'На сегодня осталось {remain} {cash_name}'
